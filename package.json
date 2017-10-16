@@ -1,0 +1,19 @@
+{
+  "name": "webgl2workshop",
+  "version": "1.0.0",
+  "description": "WebGL2 Enthusiast group learning material",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "webgl2",
+    "realtime",
+    "rendering",
+    "graphics",
+    "tutorial",
+    "learning"
+  ],
+  "author": "Red Datura Softworks & Mlady Pes",
+  "license": "ISC"
+}
