@@ -15,5 +15,8 @@
     "learning"
   ],
   "author": "Red Datura Softworks & Mlady Pes",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "@types/webgl2": "0.0.2"
+  }
 }

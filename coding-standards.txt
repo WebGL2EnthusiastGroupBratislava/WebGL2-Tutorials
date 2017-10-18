@@ -1,0 +1,160 @@
+Powerplay Studios Unity Coding Standards
+
+C#:
+
+    Code Style:
+        
+        Brackets:
+        
+            * Always use brackets "{}" even if it is just an one liner .
+
+            * Brackets shall go always on a new line, like this.
+                if(condition)
+                {
+                    
+                }
+
+            * Brackets shall be used also in switch-case scenarios, so it will guard the scope inside the case.
+              The reason for this is keeping the method scope clean without rewriting variables by other.
+              programmers. 
+
+        Types:
+
+            * ALWAYS deduct numeric types, so the compiler/interpreter must not retype it later.
+              It is a waste of precious processor cycles, lost because the compiler is working on correcting your laziness.
+              For example:
+                When there is an addition to two (or more) integers, use "1 + 1".
+                When there is an addition to two (or more) floats, use "1.5f + 1.0f" or "1.5f + 1f".
+                When there is an addition to two (or more) doubles, use "1.5 + 1.0".
+              ALWAYS prefer the floating point over integer/double values.
+              CPU/GPU is better at floating point values, than with integers, also mostly you will see floating points in Unity.
+
+            * The use of var is permitted, although you should use it scarcely, only when the type is clearly deductible by plain sight.
+              For example in for loops or foreach loops, or if you assign primitive type to the variable (var i = 100; is an int, clearly deductible).
+
+        Naming Conventions:
+
+            * Always use CamelCase for naming variables, methods, classes, etc.
+
+            * Class names start with capital letter and then CamelCase: MyClassWithAVeryLongName .
+
+            * Method names start with capital letter as well: <identifier> <type> MyMethodWithAnIncrediblyLongName(<params>){}.
+
+            * Class member variables start with small letter: <identifier> <type> myClassMemeberVariableWithEvenLongerNameThanThePreviousTwoTogether;.
+
+            * Method local variables start with small letter, see above.
+        
+            * You should ALWAYS name things aptly, best with a shortest possible, fully descriptive name.
+              This one is hard, but not impossible.
+              For Example: 
+                - You have a variable for Force in physics. You don't name it "f", but instead "force"
+                - You have a method which does camera animation on failure, you name it "CameraAnimationOnFail[ure]()".
+
+            * If you use delegates, then DO append EventHandler after the name of the delegate.
+              For example: We have a Click delegate "public delegate void ClickEventHandler()".
+
+            * If the delegate is used as a callback, then the same rules apply as above, but instead of EventHandler name them Callback.
+
+            * Acronyms should be treated as words as well. (Http instead of HTTP).
+
+            * If you need to create interfaces, always prepend capital I in front of the name (INameOfTheInterface).
+
+        Miscellaneous rules:
+
+            * ALWAYS write code in english, no excuses accepted. If you don't speak english, learn it right now.
+
+            * NEVER use public class member variables, always use private/protected (if you apply inheritance) modifiers.
+
+            * Use [SerializeField] decorator attribute to tell Unity that the variable shall be shown in the inspector.
+
+            * If you do need to get a variable from one script to another, use C# style getter/setters.
+                public bool IsPaused
+                {
+                    get
+                    {
+                        return isPaused;
+                    }
+                    set
+                    {
+                        isPaused = value;
+                    }
+                }
+            
+            * If you can, always apply private setter (if you can!!!).
+
+            * Try to avoid default in switches, because C# adds them by default in background (if you do not trust me, look at the MSIL code)
+
+            * DO NOT USE GameObject.Find(string) EVER!!!
+              You can specify a GameObject as a class member variable, and then assign this GameObject from the inspector.
+              You will avoid breaking the game code if the asset name is accidentally/on purpose changed.
+            
+            * If you use Debug.LogWhatever() methods, ALWAYS supply a context (second parameter, after the log message), so it will help us to see which object
+              in the scene spawned this message.
+
+            * You should use tabs instead of spaces.
+
+            * One tab is 4 spaces long, if it is not, then fix it in your IDE of preference.
+
+            * If a class is longer than 500 lines, consider breaking its functionality into multiple classes.
+            
+            * Line length shall never pass above 100 columns.
+
+            * There should be exactly 1 space between methods to enhance visual clarity.
+
+            * Use SOLID design principles: https://en.wikipedia.org/wiki/SOLID_%28object-oriented_design%29
+              Most importantly S and D, if other principles can't be met.
+
+            * If you have warnings, fix them.
+              If the warnings are because of the unreferenced variable, then DELETE IT (but first check if Unity isn't bugged as always)!!!
+
+            * You should group same protection levelled methods together.
+              For example:
+                public class SomeNameIJustCameUpWith
+                {
+                    public Vector3 start = Vector3.zero;
+                    public Vector3 end = Vector3.zero;
+                    public float thickness = 1f;
+                    public float scale = .95f;
+                    Vector3 offset;
+                    public float offset = .01f;
+
+                    Vector3 lastStartPoint;
+                    Vector3 lastEndPoint;
+
+                    GameObject texture;
+                    bool decay = false;
+                    public bool DecayTrigger=false;
+                    float decayDrop = 1f;
+                }
+                the above code is really badly organized, and should be corrected like this:
+                public class SomeNameIJustCameUpWith
+                {
+                    public Vector3 start = Vector3.zero;
+                    public Vector3 end = Vector3.zero;
+                    public float thickness = 1f;
+                    public float scale = .95f;
+                    public bool DecayTrigger=false;
+                    public float offset = .01f;
+
+                    Vector3 offset;
+                    Vector3 lastStartPoint;
+                    Vector3 lastEndPoint;
+                    GameObject texture;
+                    bool decay = false;
+                    float decayDrop = 1f;
+                }
+
+                * You are allowed to use nested classes, but use with care. You might not want that if you want to use the class in another class.
+
+                * Don't be afraid to use const wherever possible.
+
+                * Stay away from ref keywords in C#. It requires knowledge about working with pointers, which, nowadays, may not be a common knowledge.
+                  DO NOT use them even if you know how pointers work, because someone new might not know about that.
+
+                * If you really need to return multiple results from a method (but you really shouldn't!!!), you can use the out parameter qualifier, but really just scarcely!!!
+
+                * NEVER declare multiple variables in one line.
+
+                * Try to really avoid profanity
+
+                * Try to avoid smileys and other distractive/funny/funky things in the code.

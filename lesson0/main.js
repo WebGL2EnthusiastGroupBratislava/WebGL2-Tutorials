@@ -1,84 +1,167 @@
-function main() {
-    var canvas = document.getElementById("canvas");
-    var gl = canvas.getContext("webgl2");
-    if (!gl) {
-        console.error("your browser is probably not compatible with webgl2");
-        return;
+/// <reference path="../node_modules/@types/webgl2/index.d.ts" />
+var BindFlags;
+(function (BindFlags) {
+    BindFlags[BindFlags["VERTEX_BUFFER"] = 1] = "VERTEX_BUFFER";
+    BindFlags[BindFlags["INDEX_BUFFER"] = 2] = "INDEX_BUFFER";
+})(BindFlags || (BindFlags = {}));
+var BufferUsage;
+(function (BufferUsage) {
+    BufferUsage[BufferUsage["STATIC_DRAW"] = 1] = "STATIC_DRAW";
+    BufferUsage[BufferUsage["DYNAMIC_DRAW"] = 2] = "DYNAMIC_DRAW";
+})(BufferUsage || (BufferUsage = {}));
+class GraphicsDeviceContext {
+    constructor(glcontext, glcanvas) {
+        this.canvas = glcanvas;
+        this.gl = glcontext;
     }
-    var vertices = [
-        -0.5, 0.5, 0.0,
-        -0.5, -0.5, 0.0,
-        0.5, -0.5, 0.0,
-    ];
-    var indices = [0, 1, 2];
-    // Create an empty buffer object to store vertex buffer
-    var vertex_buffer = gl.createBuffer();
-    // Bind appropriate array buffer to it
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
-    // Pass the vertex data to the buffer
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-    // Unbind the buffer
-    gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    // Create an empty buffer object to store Index buffer
-    var Index_Buffer = gl.createBuffer();
-    // Bind appropriate array buffer to it
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Index_Buffer);
-    // Pass the vertex data to the buffer
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
-    // Unbind the buffer
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
-    /*================ Shaders ====================*/
-    // Vertex shader source code
-    var vertCode = 'attribute vec3 coordinates;' +
-        'void main(void) {' +
-        ' gl_Position = vec4(coordinates, 1.0);' +
-        '}';
-    //fragment shader source code
-    var fragCode = 'void main(void) {' +
-        ' gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);' +
-        '}';
-    // Create a vertex shader object
-    var vertShader = gl.createShader(gl.VERTEX_SHADER);
-    // Attach vertex shader source code
-    gl.shaderSource(vertShader, vertCode);
-    // Compile the vertex shader
-    gl.compileShader(vertShader);
-    // Create fragment shader object
-    var fragShader = gl.createShader(gl.FRAGMENT_SHADER);
-    // Attach fragment shader source code
-    gl.shaderSource(fragShader, fragCode);
-    // Compile the fragmentt shader
-    gl.compileShader(fragShader);
-    // Create a shader program object to store
-    // the combined shader program
-    var shaderProgram = gl.createProgram();
-    // Attach a vertex shader
-    gl.attachShader(shaderProgram, vertShader);
-    // Attach a fragment shader
-    gl.attachShader(shaderProgram, fragShader);
-    // Link both the programs
-    gl.linkProgram(shaderProgram);
-    // Use the combined shader program object
-    gl.useProgram(shaderProgram);
-    // Bind vertex buffer object
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buffer);
-    // Bind index buffer object
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, Index_Buffer);
-    // Get the attribute location
-    var coord = gl.getAttribLocation(shaderProgram, "coordinates");
-    // Point an attribute to the currently bound VBO
-    gl.vertexAttribPointer(coord, 3, gl.FLOAT, false, 0, 0);
-    // Enable the attribute
-    gl.enableVertexAttribArray(coord);
-    // Clear the canvas
-    gl.clearColor(0.5, 0.5, 0.5, 0.9);
-    // Enable the depth test
-    gl.enable(gl.DEPTH_TEST);
-    // Clear the color buffer bit
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    // Set the view port
-    gl.viewport(0, 0, canvas.width, canvas.height);
-    // Draw the triangle
-    gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+    RSSetViewport(viewport) {
+        if (viewport == null) {
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        }
+        else {
+            this.gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
+        }
+    }
 }
-main();
+class GraphicsDeviceWebGL2 {
+    handleContextLost(event) {
+        event.preventDefault();
+        console.error("context lost!");
+    }
+    handleContextRestored(event) {
+    }
+    constructor(canvasName) {
+        this.canvas = document.getElementById(canvasName);
+        this.gl = this.canvas.getContext("webgl2");
+        this.canvas.addEventListener("webglcontextlost", this.handleContextLost, false);
+        this.canvas.addEventListener("webglcontextrestored", this.handleContextRestored, false);
+    }
+    GetDevice() {
+        return this.gl;
+    }
+    //Creates device context for state switching
+    //TODO: Deal with multiple contexts
+    GetDeviceContext() {
+        return new GraphicsDeviceContext(this.gl, this.canvas);
+    }
+    CheckIfWebGLContextWasCreated() {
+        if (!this.gl) {
+            console.error("your browser is probably not compatible with webgl2");
+            return this.gl.CONTEXT_LOST_WEBGL;
+        }
+        return this.gl.NO_ERROR;
+    }
+    //This internal method maps valid WebGL buffer usage bindings
+    DecodeBindFlag(flags) {
+        switch (flags) {
+            case BindFlags.VERTEX_BUFFER:
+                {
+                    return this.gl.ARRAY_BUFFER;
+                }
+            case BindFlags.INDEX_BUFFER:
+                {
+                    return this.gl.ELEMENT_ARRAY_BUFFER;
+                }
+            default:
+                {
+                    return this.gl.INVALID_VALUE;
+                }
+        }
+    }
+    CreateBuffer(descriptor, initialData) {
+        console.log(initialData);
+        let bindFlag = this.DecodeBindFlag(descriptor.bindFlags);
+        // Create an empty buffer object to store vertex buffer
+        let buffer = this.gl.createBuffer();
+        this.gl.bindBuffer(bindFlag, buffer);
+        if (bindFlag == this.gl.ARRAY_BUFFER) {
+            this.gl.bufferData(bindFlag, new Float32Array(initialData), this.gl.STATIC_DRAW);
+        }
+        else {
+            this.gl.bufferData(bindFlag, new Uint16Array(initialData), this.gl.STATIC_DRAW);
+        }
+        this.gl.bindBuffer(bindFlag, null);
+        return buffer;
+    }
+    CreatePixelShader(shaderCode) {
+        // Create fragment shader object
+        let shader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
+        this.gl.shaderSource(shader, shaderCode);
+        this.gl.compileShader(shader);
+        if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+            var info = this.gl.getShaderInfoLog(shader);
+            throw 'Could not compile WebGL program. \n\n' + info;
+        }
+        return shader;
+    }
+    CreateVertexShader(shaderCode) {
+        // Create fragment shader object
+        let shader = this.gl.createShader(this.gl.VERTEX_SHADER);
+        this.gl.shaderSource(shader, shaderCode);
+        this.gl.compileShader(shader);
+        if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
+            var info = this.gl.getShaderInfoLog(shader);
+            throw 'Could not compile WebGL program. \n\n' + info;
+        }
+        return shader;
+    }
+    CreateShaderProgram(vertexShader, pixelShader) {
+        let shaderProgram = this.gl.createProgram();
+        // Attach a vertex and pixel shader
+        this.gl.attachShader(shaderProgram, vertexShader);
+        this.gl.attachShader(shaderProgram, pixelShader);
+        this.gl.linkProgram(shaderProgram);
+        if (!this.gl.getProgramParameter(shaderProgram, this.gl.LINK_STATUS)) {
+            var info = this.gl.getProgramInfoLog(shaderProgram);
+            throw 'Could not compile WebGL program. \n\n' + info;
+        }
+        return shaderProgram;
+    }
+}
+class Lesson0 {
+    constructor() {
+        this.Render = () => {
+            this.gl.useProgram(this.program);
+            this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbo);
+            this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.ibo);
+            var coord = this.gl.getAttribLocation(this.program, "coordinates");
+            this.gl.vertexAttribPointer(coord, 3, this.gl.FLOAT, false, 0, 0);
+            this.gl.enableVertexAttribArray(coord);
+            this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
+            this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+            this.deviceContext.RSSetViewport();
+            this.gl.enable(this.gl.DEPTH_TEST);
+            this.gl.drawElements(this.gl.TRIANGLES, this.indices.length, this.gl.UNSIGNED_SHORT, 0);
+            requestAnimationFrame(this.Render);
+        };
+    }
+    Main() {
+        let device = new GraphicsDeviceWebGL2("canvas");
+        device.CheckIfWebGLContextWasCreated();
+        this.deviceContext = device.GetDeviceContext();
+        this.gl = device.GetDevice();
+        let vertices = [
+            -0.5, 0.5, 0.0,
+            -0.5, -0.5, 0.0,
+            0.5, -0.5, 0.0,
+        ];
+        this.indices = [0, 1, 2];
+        this.vbo = device.CreateBuffer({ bindFlags: BindFlags.VERTEX_BUFFER, usage: BufferUsage.STATIC_DRAW }, vertices);
+        this.ibo = device.CreateBuffer({ bindFlags: BindFlags.INDEX_BUFFER, usage: BufferUsage.STATIC_DRAW }, this.indices);
+        // Vertex shader source code
+        let vertCode = 'attribute vec3 coordinates;' +
+            'void main(void) {' +
+            ' gl_Position = vec4(coordinates, 1.0);' +
+            '}';
+        //fragment shader source code
+        let fragCode = 'void main(void) {' +
+            ' gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);' +
+            '}';
+        let vertexShader = device.CreateVertexShader(vertCode);
+        let pixelShader = device.CreatePixelShader(fragCode);
+        this.program = device.CreateShaderProgram(vertexShader, pixelShader);
+        this.Render();
+    }
+}
+let lesson = new Lesson0();
+lesson.Main();
