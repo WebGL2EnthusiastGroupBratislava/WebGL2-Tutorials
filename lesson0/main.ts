@@ -1,5 +1,23 @@
 /// <reference path="../node_modules/@types/webgl2/index.d.ts" />
 
+function fopen(file, callback)
+{
+    let rawFile = new XMLHttpRequest();
+    rawFile.open("GET", file, false);
+    rawFile.onreadystatechange = function ()
+    {
+        if(rawFile.readyState === 4)
+        {
+            if(rawFile.status === 200 || rawFile.status == 0)
+            {
+                let allText = rawFile.responseText;
+                callback(allText);
+            }
+        }
+    }
+    rawFile.send(null);
+}
+
 enum BindFlags 
 {
     VERTEX_BUFFER = 1,
@@ -51,6 +69,27 @@ class GraphicsDeviceContext
             this.gl.viewport(viewport.x , viewport.y, viewport.width, viewport.height);
         }
     }
+
+    public IASetIndexBuffer(indexBuffer : WebGLBuffer)
+    {
+        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    }
+
+    public IASetVertexBuffer(vertexBuffer : WebGLBuffer)
+    {
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, vertexBuffer);
+    }
+
+    public ClearRenderTargetView(clearColour : number[])
+    {
+        this.gl.clearColor(clearColour[0], clearColour[1], clearColour[2], clearColour[3]);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    }
+
+    public DrawIndexed(indexCount : number, startIndex : number)
+    {
+        this.gl.drawElements(this.gl.TRIANGLES, indexCount, this.gl.UNSIGNED_SHORT, startIndex);
+    }
 }
 
 class GraphicsDeviceWebGL2
@@ -59,27 +98,29 @@ class GraphicsDeviceWebGL2
     private gl;
     //The HTML Canvas element
     private canvas : HTMLCanvasElement;
-    handleContextLost(event) {
-        event.preventDefault();
-        console.error("context lost!");
-    }
-      
-    handleContextRestored(event) {
-    }
 
     public constructor(canvasName : string) 
     { 
         this.canvas = <HTMLCanvasElement>document.getElementById(canvasName);
         this.gl = this.canvas.getContext("webgl2");
-
-        this.canvas.addEventListener(
-            "webglcontextlost", this.handleContextLost, false);
-        this.canvas.addEventListener(
-            "webglcontextrestored", this.handleContextRestored, false);
+        this.Resize();
     }
 
+    private Resize() {
+        // Lookup the size the browser is displaying the canvas.
+        var displayWidth  = this.canvas.clientWidth;
+        var displayHeight = this.canvas.clientHeight;
+       
+        // Check if the canvas is not the same size.
+        if (this.canvas.width  != displayWidth ||
+            this.canvas.height != displayHeight) {
+       
+          // Make the canvas the same size
+          this.canvas.width  = displayWidth;
+          this.canvas.height = displayHeight;
+        }
+      }
 
-   
     public GetDevice() : WebGL2RenderingContext
     {
         return this.gl;
@@ -97,9 +138,8 @@ class GraphicsDeviceWebGL2
         if (!this.gl) 
         {
             console.error("your browser is probably not compatible with webgl2");
-            return this.gl.CONTEXT_LOST_WEBGL;
+            throw "your browser is probably not compatible with webgl2";
         }
-        return this.gl.NO_ERROR;
     }
 
     //This internal method maps valid WebGL buffer usage bindings
@@ -129,6 +169,7 @@ class GraphicsDeviceWebGL2
         // Create an empty buffer object to store vertex buffer
         let buffer = this.gl.createBuffer();
         this.gl.bindBuffer(bindFlag, buffer);
+
         if(bindFlag == this.gl.ARRAY_BUFFER)
         {
             this.gl.bufferData(bindFlag, new Float32Array(initialData), this.gl.STATIC_DRAW);
@@ -147,9 +188,10 @@ class GraphicsDeviceWebGL2
         let shader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
         this.gl.shaderSource(shader, shaderCode); 
         this.gl.compileShader(shader);
+
         if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) 
         {
-            var info = this.gl.getShaderInfoLog(shader);
+            let info = this.gl.getShaderInfoLog(shader);
             throw 'Could not compile WebGL program. \n\n' + info;
         }
         return shader;
@@ -161,9 +203,10 @@ class GraphicsDeviceWebGL2
         let shader = this.gl.createShader(this.gl.VERTEX_SHADER);
         this.gl.shaderSource(shader, shaderCode); 
         this.gl.compileShader(shader);
+
         if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) 
         {
-            var info = this.gl.getShaderInfoLog(shader);
+            let info = this.gl.getShaderInfoLog(shader);
             throw 'Could not compile WebGL program. \n\n' + info;
         }
         return shader;
@@ -179,10 +222,9 @@ class GraphicsDeviceWebGL2
 
         if (!this.gl.getProgramParameter(shaderProgram, this.gl.LINK_STATUS)) 
         {
-            var info = this.gl.getProgramInfoLog(shaderProgram);
+            let info = this.gl.getProgramInfoLog(shaderProgram);
             throw 'Could not compile WebGL program. \n\n' + info;
         }
-
         return shaderProgram;
     }
 }
@@ -195,9 +237,9 @@ class Lesson0
     program : WebGLShader;
     indices : number[];
     deviceContext : GraphicsDeviceContext;
+
     Main()
     {
-    
         let device : GraphicsDeviceWebGL2 = new GraphicsDeviceWebGL2("canvas");
         device.CheckIfWebGLContextWasCreated();
         this.deviceContext = device.GetDeviceContext();
@@ -213,22 +255,19 @@ class Lesson0
     
         this.vbo = device.CreateBuffer({bindFlags : BindFlags.VERTEX_BUFFER, usage : BufferUsage.STATIC_DRAW}, vertices);
         this.ibo = device.CreateBuffer({bindFlags : BindFlags.INDEX_BUFFER, usage : BufferUsage.STATIC_DRAW}, this.indices);
-         
-        // Vertex shader source code
-        let vertCode =
-        'attribute vec3 coordinates;' +
-        'void main(void) {' +
-            ' gl_Position = vec4(coordinates, 1.0);' +
-        '}';
         
-        //fragment shader source code
-        let fragCode =
-        'void main(void) {' +
-            ' gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);' +
-        '}';
+        let vertexShader;
+        fopen("/shaders/simplevertex.glsl", (text) =>
+        {
+            vertexShader = device.CreateVertexShader(text);
+        });
 
-        let vertexShader = device.CreateVertexShader(vertCode);
-        let pixelShader = device.CreatePixelShader(fragCode);
+        let pixelShader;
+        fopen("/shaders/simplepixel.glsl", (text) =>
+        {
+            pixelShader = device.CreatePixelShader(text);
+        });
+        
         this.program = device.CreateShaderProgram(vertexShader, pixelShader);
         this.Render();
     }
@@ -236,23 +275,19 @@ class Lesson0
     Render = () => 
     {
         this.gl.useProgram(this.program);
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.vbo);
-        this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.ibo);
-        var coord = this.gl.getAttribLocation(this.program, "coordinates");
+        this.deviceContext.IASetVertexBuffer(this.vbo);
+        this.deviceContext.IASetIndexBuffer(this.ibo);
+        let coord = this.gl.getAttribLocation(this.program, "coordinates");
         this.gl.vertexAttribPointer(coord, 3, this.gl.FLOAT, false, 0, 0); 
         this.gl.enableVertexAttribArray(coord);
-        this.gl.clearColor(0.0, 0.0, 0.0, 1.0);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        this.deviceContext.ClearRenderTargetView([0.392, 0.584, 0.929, 1.0]);
+    
         this.deviceContext.RSSetViewport();
         this.gl.enable(this.gl.DEPTH_TEST);
-        this.gl.drawElements(this.gl.TRIANGLES, this.indices.length, this.gl.UNSIGNED_SHORT,0);
+        this.deviceContext.DrawIndexed(this.indices.length, 0);
         requestAnimationFrame(this.Render);
-     }
+    }
 }
-
-
-
-
 
 let lesson = new Lesson0();
 lesson.Main();
