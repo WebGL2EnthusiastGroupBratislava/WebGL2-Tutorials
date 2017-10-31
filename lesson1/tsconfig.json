@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+        "target": "ES6",
+        "outFile": "build/app.js"
+    },
+    "exclude": [
+        "node_modules",
+        "**/node_modules/*"
+    ],
+
+    "files": [
+        "../utility/FileLoader.ts",
+        "../utility/ShaderProgram.ts",
+        "../babylon/babylon.math.ts",
+        "../babylon/babylon.math.scalar.ts",
+        "../babylon/babylon.types.ts",
+        "main.ts"
+    ]
+}
