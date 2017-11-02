@@ -1,12 +1,17 @@
 /// <reference path="../node_modules/@types/webgl2/index.d.ts" />
-/// <reference path="../utility/FileLoader.ts" />
+
+interface IShaderUniform
+{
+    InitializeUniforms() : void;
+    SendUniformsToGpu() : void;
+}
 
 class ShaderProgram
 {
-    private vertexShader : WebGLShader;
-    private pixelShader : WebGLShader;
-    private program : WebGLProgram;
-    private gl : WebGL2RenderingContext;
+    protected vertexShader : WebGLShader;
+    protected pixelShader : WebGLShader;
+    protected program : WebGLProgram;
+    protected gl : WebGL2RenderingContext;
 
     public constructor(gl : WebGL2RenderingContext)
     {
@@ -20,7 +25,7 @@ class ShaderProgram
             this.vertexShader = this.gl.createShader(this.gl.VERTEX_SHADER);
             this.gl.shaderSource(this.vertexShader, text);
             this.gl.compileShader(this.vertexShader);
-            this.VerifyShader(this.gl, this.vertexShader);
+            this.VerifyCompileStatus(this.vertexShader);
         });
     }
 
@@ -31,7 +36,7 @@ class ShaderProgram
             this.pixelShader = this.gl.createShader(this.gl.FRAGMENT_SHADER);
             this.gl.shaderSource(this.pixelShader, text);
             this.gl.compileShader(this.pixelShader);
-            this.VerifyShader(this.gl, this.vertexShader);
+            this.VerifyCompileStatus(this.pixelShader);
         });
     }
 
@@ -64,11 +69,11 @@ class ShaderProgram
         return this.gl.getUniformLocation(this.program, uniform);
     }
 
-    private VerifyShader(gl : WebGL2RenderingContext, shader : WebGLShader) : void
+    private VerifyCompileStatus( shader : WebGLShader) : void
     {
-        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) 
+        if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) 
         {
-            let info = gl.getShaderInfoLog(shader);
+            let info = this.gl.getShaderInfoLog(shader);
             throw 'Could not compile WebGL program. \n\n' + info;
         }
     }

@@ -11,9 +11,11 @@
     "files": [
         "../utility/FileLoader.ts",
         "../utility/ShaderProgram.ts",
+        "../utility/GpuBuffer.ts",
         "../babylon/babylon.math.ts",
         "../babylon/babylon.math.scalar.ts",
         "../babylon/babylon.types.ts",
+        "SimpleShaderProgram.ts",
         "main.ts"
     ]
 }
